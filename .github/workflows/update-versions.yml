@@ -19,7 +19,7 @@ permissions:
   
 jobs:
   update-versions:
-    if: github.repository == 'redhat-camel/jbang-catalog'
+    #if: github.repository == 'redhat-camel/jbang-catalog'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
