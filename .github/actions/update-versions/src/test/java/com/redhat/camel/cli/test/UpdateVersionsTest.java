@@ -110,7 +110,7 @@ public class UpdateVersionsTest {
                 final Map<String, String> newProps = new LinkedHashMap<>();
                 newProps.put("-Dcamel.jbang.quarkusGroupId", "com.redhat.quarkus.platform");
                 newProps.put("-Dcamel.jbang.quarkusArtifactId", "quarkus-bom");
-                newProps.put("-Dcamel.jbang.quarkusVersion", platformVersion);
+                newProps.put("-Dcamel.jbang.quarkusVersion", platformVersion.replace("0000", "0001"));
                 final String newSource = edit(oldSource, newProps);
                 if (!newSource.equals(oldSource)) {
                     Files.writeString(camelJBangJavaPath, newSource, StandardCharsets.UTF_8);
@@ -180,7 +180,6 @@ public class UpdateVersionsTest {
                                     final String bomVersion = ceqBomGavSegments[4];
                                     final String url = toUrl(remoteMavenRepositoryBaseUrl, ceqBomGavSegments[0],
                                             ceqBomGavSegments[1], bomVersion, "pom");
-                                    // System.out.println("=== url " + url);
                                     final XmlPath xmlPath = RestAssured.get(url)
                                             .then()
                                             .statusCode(200)
