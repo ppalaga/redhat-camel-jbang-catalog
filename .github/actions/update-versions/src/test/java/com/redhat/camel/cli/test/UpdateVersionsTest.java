@@ -40,7 +40,7 @@ import io.restassured.path.xml.XmlPath;
 import io.restassured.path.xml.element.NodeChildren;
 
 public class UpdateVersionsTest {
-    private static final Logger log = LoggerFactory.getLogger(GitCredentials.class);
+    private static final Logger log = LoggerFactory.getLogger(GitHubTokenCredentials.class);
 
     private static final Pattern BRANCH_PATTERN = Pattern.compile("[0-9]+\\.[0-9]+\\.[0-9]+($|[^0-9])");
     private static final Pattern JAVA_OPTIONS_PATTERN = Pattern.compile("\n//[ \t]*JAVA_OPTIONS[ \t]+(.*)(\r?\n)");
@@ -51,7 +51,7 @@ public class UpdateVersionsTest {
         /* Input parameters */
         String remoteUrl = System.getenv("JBANG_CATALOG_GIT_REPOSITORY");
         if (remoteUrl == null || remoteUrl.isEmpty()) {
-            remoteUrl = "git@github.com:redhat-camel/jbang-catalog.git";
+            remoteUrl = "https://github.com/redhat-camel/jbang-catalog.git";
         }
         log.info("Using remote " + remoteUrl);
         final String ghToken = System.getenv("GITHUB_TOKEN");
@@ -60,7 +60,7 @@ public class UpdateVersionsTest {
         final ComparableVersion minimalCamelVersion = new ComparableVersion("4.14.0");
 
         final String remoteAlias = "upstream";
-        final CredentialsProvider creds = new GitCredentials(ghToken);
+        final CredentialsProvider creds = new GitHubTokenCredentials(ghToken);
 
         /* From branch name such as 4.14.x to RHBQ Platform version, such as 3.27.0.redhat-00001 */
         final Map<String, String> camelMajorMinorToRhbqPlatformVersion = collectVersions(
@@ -113,7 +113,7 @@ public class UpdateVersionsTest {
                 newProps.put("-Dcamel.jbang.quarkusVersion", platformVersion);
                 final String newSource = edit(oldSource, newProps);
                 if (!newSource.equals(oldSource)) {
-                    Files.writeString(camelJBangJavaPath, newSource);
+                    Files.writeString(camelJBangJavaPath, newSource, StandardCharsets.UTF_8);
                     git.add().addFilepattern("CamelJBang.java").call();
                     final String msg = "Upgrade to RHBQ Platform " + platformVersion;
                     log.info("git: " + msg);
@@ -277,11 +277,11 @@ public class UpdateVersionsTest {
         return sb.toString();
     }
 
-    static class GitCredentials extends CredentialsProvider {
+    static class GitHubTokenCredentials extends CredentialsProvider {
 
         private String ghToken;
 
-        public GitCredentials(String ghToken) {
+        public GitHubTokenCredentials(String ghToken) {
             this.ghToken = ghToken;
         }
 
@@ -303,7 +303,12 @@ public class UpdateVersionsTest {
                     continue;
                 }
                 if (i instanceof CredentialItem.StringType) {
-                    if (i.getPromptText().equals("Password: ")) { //$NON-NLS-1$
+                    if (i.getPromptText().equals("Password: ")) {
+                        continue;
+                    }
+                }
+                if (i instanceof CredentialItem.YesNoType) {
+                    if (i.getPromptText().startsWith("The authenticity of host 'github.com' can't be established.")) {
                         continue;
                     }
                 }
@@ -331,13 +336,19 @@ public class UpdateVersionsTest {
                     continue;
                 }
                 if (i instanceof CredentialItem.StringType && ghToken != null) {
-                    if (i.getPromptText().equals("Password: ")) { //$NON-NLS-1$
+                    if (i.getPromptText().equals("Password: ")) {
                         ((CredentialItem.StringType) i).setValue(ghToken);
                         continue;
                     }
                 }
+                if (i instanceof CredentialItem.YesNoType && ghToken != null) {
+                    if (i.getPromptText().startsWith("The authenticity of host 'github.com' can't be established.")) {
+                        ((CredentialItem.YesNoType) i).setValue(true);
+                        continue;
+                    }
+                }
                 throw new UnsupportedCredentialItem(uri, i.getClass().getName()
-                        + ":" + i.getPromptText()); //$NON-NLS-1$
+                        + ":" + i.getPromptText());
             }
             return true;
         }
