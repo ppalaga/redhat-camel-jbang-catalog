@@ -835,22 +835,10 @@ public class UpdateVersionsTest {
                 .execute()
                 .assertSuccess();
 
-        final Path userHome = Path.of(System.getProperty("user.home"));
-
         final String camelVersion = findCamelVersion(camelJbangPath);
         final Path testDir = Path.of("target/UpdateVersionsTest-" + camelVersion + "-" + UUID.randomUUID())
                 .toAbsolutePath().normalize();
-        if (camelVersion.startsWith("4.14.")
-                || camelVersion.startsWith("4.18.")) {
-            try (RestoreFile settings = new RestoreFile(userHome.resolve(".m2/settings.xml"), Path.of("settings.xml"))) {
-                // Known issue in Camel JBang 4.14.x https://issues.redhat.com/browse/CEQ-12225
-                endToEndJbang(platformVersion, camelVersion, testDir);
-            } catch (Exception e) {
-                throw new RuntimeException("Could not replace or restore settings.xml", e);
-            }
-        } else {
-            endToEndJbang(platformVersion, camelVersion, testDir);
-        }
+        endToEndJbang(platformVersion, camelVersion, testDir);
     }
 
     static void endToEndJbang(String platformVersion, final String camelVersion, final Path testDir) {
